@@ -79,7 +79,9 @@ def entities_to_departure_board_str(entities, stop_id):
         delta = arrival - datetime.now()
         width = delta.total_seconds() * 0.1
         buy = round(delta.total_seconds() + width/2)
+        # buy = get_low_bound();
         sell = round(delta.total_seconds() - width/2)
+        # sell = get_high_bound();
         dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} ({terminus}) in {round(delta.total_seconds())} seconds\n'
         dep_str += f'Market: [Sell: {sell}, Buy: {buy}]\n\n'
 
