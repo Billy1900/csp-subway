@@ -68,67 +68,113 @@ def get_terminus(entity):
 
 tracker = {}
 ticks = [0]
-def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks):
+ticker = [0]
+last_anticipated_arrival = [0]
+def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, order):
     """
     Helper function to pretty-print train info
     """
-    df = pd.DataFrame(columns = ["order_number", "sell", "buy", "read"])
-    dep_str = f'\n At station {STOP_INFO_DF.loc[stop_id, "stop_name"]}\n\n'
-    i = 0
-    for entity in entities:
-        route = entity.trip_update.trip.route_id
+    if not order:
+        df = pd.DataFrame(columns = ["order_number", "sell", "buy", "trip_id", "read"])
+        dep_str = f'\n At station {STOP_INFO_DF.loc[stop_id, "stop_name"]}\n\n'
+        i = 0
+        for entity in entities:
+            route = entity.trip_update.trip.route_id
+            
+            direction = GTFS_DIRECTION[
+                entity.trip_update.trip.Extensions[
+                    nyct_subway_pb2.nyct_trip_descriptor
+                ].direction
+            ]
+            i += 1
+            terminus = get_terminus(entity)
+            arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
+            delta = arrival - datetime.now()
+
+            if entity.trip_update.trip.trip_id in tracker:
+                tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
+                tracker[entity.trip_update.trip.trip_id]["mult"] = (tracker[entity.trip_update.trip.trip_id]["origin"]-tracker[entity.trip_update.trip.trip_id]["current"])/ticks[0]
+            else:
+                tracker[entity.trip_update.trip.trip_id] = {}
+                tracker[entity.trip_update.trip.trip_id]["origin"] = round(delta.total_seconds())
+                tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
+                tracker[entity.trip_update.trip.trip_id]["mult"] = 1            
+
+            if (tracker[entity.trip_update.trip.trip_id]["mult"] > 1):
+                ev = tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/8)+1)
+            else:
+                ev =  tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/4)+1)
+
+            spread = ev * (0.2 * (math.e ** (-0.7*ticks[0]/100)) + 0.1) 
+
+            buy = ev + spread/2
+            sell = ev - spread/2
+
+
+            dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
+            dep_str += f'Market: [Sell: {math.floor(sell/60)}:{(round(sell%60)):02d}, Buy: {math.floor(buy/60)}:{(round(buy%60)):02d}]\n\n'
+
+            df.loc[i-1] = [i, ev, ev, entity.trip_update.trip.trip_id, 0]
         
-        direction = GTFS_DIRECTION[
-            entity.trip_update.trip.Extensions[
-                nyct_subway_pb2.nyct_trip_descriptor
-            ].direction
-        ]
-        i += 1
-        terminus = get_terminus(entity)
-        arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
-        delta = arrival - datetime.now()
-
-        if entity.trip_update.trip.trip_id in tracker:
-            tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
-            tracker[entity.trip_update.trip.trip_id]["mult"] = (tracker[entity.trip_update.trip.trip_id]["origin"]-tracker[entity.trip_update.trip.trip_id]["current"])/ticks[0]
+        if os.path.exists(shared_file):
+            with FileLock(f"{shared_file}.lock"):
+                ori_df = pd.read_csv(shared_file)
+                ori_df: pd.DataFrame = ori_df.append(df, ignore_index=True)  # append the new data
+                ori_df.to_csv(shared_file, index=False)
         else:
-            tracker[entity.trip_update.trip.trip_id] = {}
-            tracker[entity.trip_update.trip.trip_id]["origin"] = round(delta.total_seconds())
-            tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
-            tracker[entity.trip_update.trip.trip_id]["mult"] = 1            
+            with FileLock(f"{shared_file}.lock"):
+                df.to_csv(shared_file, index=False)
 
-        if (tracker[entity.trip_update.trip.trip_id]["mult"] > 1):
-            ev = tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/8)+1)
-        else:
-            ev =  tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/4)+1)
-
-        spread = ev * (0.2 * (math.e ** (-0.7*ticks[0]/100)) + 0.1) 
-
-        buy = ev + spread/2
-        sell = ev - spread/2
-
-
-        dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} ({terminus}) in {round(delta.total_seconds())} seconds\n'
-        dep_str += f'Market: [Sell: {sell}, Buy: {buy}]\n\n'
-
-        df.loc[i-1] = [i, ev, ev, 0] # 0: not being read; 1: being read
-
-    if os.path.exists(shared_file):
-        with FileLock(f"{shared_file}.lock"):
-            ori_df = pd.read_csv(shared_file)
-            ori_df: pd.DataFrame = ori_df.append(df, ignore_index=True)  # append the new data
-            ori_df.to_csv(shared_file, index=False)
+        print(tracker)
+        ticks[0] += 10
+        return dep_str
     else:
-        with FileLock(f"{shared_file}.lock"):
-            df.to_csv(shared_file, index=False)
+        price = order["price"] 
+        tracker_start = datetime.now()
+        goal = tracker_start + price - timedelta(seconds=ticker[0])
+        goal = goal.replace(microsecond=0)
 
-    print(tracker)
-    ticks[0] += 10
-    return dep_str
+        found = False
+        for entity in entities:
+            #if entity.trip_update.trip.trip_id != order["trip_id"]:
+            if entity.trip_update.trip.trip_id == '055250_4..S35X002':
+                found = True
+                route = entity.trip_update.trip.route_id
+                direction = GTFS_DIRECTION[
+                    entity.trip_update.trip.Extensions[
+                        nyct_subway_pb2.nyct_trip_descriptor
+                    ].direction
+                ]
+                terminus = get_terminus(entity)
+                arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
+                last_anticipated_arrival[0] = arrival
+                delta = arrival - datetime.now()
+                
+                dep_str = f'{entity.trip_update.trip.trip_id}{direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
+                dep_str += f"desired arrival time: "
+                if order["transaction"] == 'B':
+                    dep_str += f"later than {goal}\n"
+                else:
+                    dep_str += f"before {goal}\n"
+                dep_str += f"new anticipated arrival time: {arrival}\n"
+                ticker[0] += 10
+                return dep_str
+        if not found:
+            print(f"actual arrival time: {last_anticipated_arrival[0]}")
+            diff = last_anticipated_arrival[0] - goal
+            pnl = diff.total_seconds() * order['qty']
+            if order["transaction"] == 'S': 
+                pnl *= -1 
+            print(f'PNL: {pnl}')
+            return ""
+            
+
+
+
 
 
 @csp.graph
-def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str):
+def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str, print: dict):
     """s
     csp graph which ticks out the next N trains approaching the provided stations on each given line
     """
@@ -139,10 +185,10 @@ def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str):
         next_N_trains = next_N_trains_at_stop(trains_headed_for_station, stop_id, N, dir)
         dep_str = csp.apply(
             next_N_trains,
-            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_, dir, tracker, ticks),
+            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_, dir, tracker, ticks, print),
             str,
         )
-        csp.print("Departure Board", dep_str)
+        csp.print("", dep_str)
 
 
 
