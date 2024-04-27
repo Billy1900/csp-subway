@@ -11,14 +11,19 @@ SubExchange contracts are defined by three parameters:
 2. Station
 3. Creation Time
 
-Contracts tied to a particular train and corresponding station are exercised when the train arrives at that station, and the holder of the contract is paid the elapsed time, in minutes, between the contract's creation time and the time of arrival. 
-* We expect that new contracts will be created at a price that reflects how long the predicted arrival time is from the creation (current) time.
-* When a user buys a contract, they are betting that the actual arrival time of the train will be later than the predicted arrival time when the contract was originally created.
-* Likewise, a user can sell a contract to bet that the train will arrive earlier than the predicted arrival time at the time of creation.
+When a user purchases (sells) a contract, betting on the late (early) arrival of a particular train at a particular station, he is debited or credited a dollar for every second to arrival.
+
+* i.e.,  when a user purchases a contract stating a train will arrive in 2:37 minutes, he is debited $157 and becomes slightly more excited at the idea of a delayed train. Likewise, a user that sells a contract stating the train will arrive in 8:43 minutes is credited $43, and is betting that the train will get here sooner.
+
+When the train arrives at the station, the user must close out their position by counteracting the original trade for the price of the realized elapsed time. 
+
+* If the train from the first user's example actually arrives in 2:12 minutes, he must sell his contract for $132, realizing a loss of $25. If the train from the second user's example actually arrives in 6:37, she profits $126 and has a much happier ride to work.
+
+As a market maker, we price these contracts with the expectation that, in the long run, our superior knowledge of MTA delays and transit times will make this a profitable venture.
 
 ## Not Just Trading: Long-Term Social Benefits
 
 ```shell
 python place_order.py --order_number 3 --order_type B --qty 10
-python real_time.py --filename TEST --direction S 635:456    
+python real_time.py - --direction S 635:456    
 ```
