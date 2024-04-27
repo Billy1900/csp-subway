@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Tuple
 import pandas as pd
+import math
 
 import csp
 
@@ -61,8 +62,9 @@ def next_N_trains_at_stop(
 def get_terminus(entity):
     return entity.trip_update.stop_time_update[-1].stop_id
 
-
-def entities_to_departure_board_str(entities, stop_id, dir):
+tracker = {}
+ticks = [0]
+def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks):
     """
     Helper function to pretty-print train info
     """
@@ -81,21 +83,39 @@ def entities_to_departure_board_str(entities, stop_id, dir):
         terminus = get_terminus(entity)
         arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
         delta = arrival - datetime.now()
-        width = delta.total_seconds() * 0.1
-        buy = round(delta.total_seconds() + width/2)
-        # buy = get_low_bound();
-        sell = round(delta.total_seconds() - width/2)
-        # sell = get_high_bound();
+
+        if entity.trip_update.trip.trip_id in tracker:
+            tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
+            tracker[entity.trip_update.trip.trip_id]["mult"] = (tracker[entity.trip_update.trip.trip_id]["origin"]-tracker[entity.trip_update.trip.trip_id]["current"])/ticks[0]
+        else:
+            tracker[entity.trip_update.trip.trip_id] = {}
+            tracker[entity.trip_update.trip.trip_id]["origin"] = round(delta.total_seconds())
+            tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
+            tracker[entity.trip_update.trip.trip_id]["mult"] = 1            
+
+        if (tracker[entity.trip_update.trip.trip_id]["mult"] > 1):
+            ev = tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/8)+1)
+        else:
+            ev =  tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/4)+1)
+
+        spread = ev * (0.2 * (math.e ** (-0.7*ticks[0]/100)) + 0.1) 
+
+        buy = ev + spread/2
+        sell = ev - spread/2
+
+
         dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} ({terminus}) in {round(delta.total_seconds())} seconds\n'
         dep_str += f'Market: [Sell: {sell}, Buy: {buy}]\n\n'
 
-        df.loc[i-1] = [i, sell, buy]
+        df.loc[i-1] = [i, ev, ev]
+    print(tracker)
+    ticks[0] += 10
     return dep_str
 
 
 @csp.graph
 def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str):
-    """
+    """s
     csp graph which ticks out the next N trains approaching the provided stations on each given line
     """
     for service in platforms:
@@ -105,7 +125,7 @@ def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str):
         next_N_trains = next_N_trains_at_stop(trains_headed_for_station, stop_id, N, dir)
         dep_str = csp.apply(
             next_N_trains,
-            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_, dir),
+            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_, dir, tracker, ticks),
             str,
         )
         csp.print("Departure Board", dep_str)
@@ -181,6 +201,6 @@ if __name__ == "__main__":
             1,
             dir,
             starttime=datetime.utcnow(),
-            endtime=timedelta(seconds=1),
+            endtime=timedelta(seconds=5),
             realtime=True,
         )

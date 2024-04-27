@@ -58,8 +58,6 @@ if __name__ == '__main__':
             )
 
         platforms_to_subscribe_to.append((stop_id, train_line))
-    
-
 
         csp.run(
                 departure_board,
@@ -67,9 +65,10 @@ if __name__ == '__main__':
                 5,
                 args.direction,
                 starttime=datetime.utcnow(),
-                endtime=timedelta(seconds=10 ),
+                endtime=timedelta(minutes=100),
                 realtime=True,
             )
+
 
 
     
