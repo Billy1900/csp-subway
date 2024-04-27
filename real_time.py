@@ -18,13 +18,6 @@ from e_01_nyct_subway import get_stop_time_at_station, filter_trains_headed_for_
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--filename",
-        type=str,
-        default=None,
-        required=True,
-        help="File which stores the recorded data",
-    )
-    parser.add_argument(
         "platforms", nargs="+", help="stop_id:service pair: see stops.txt for stop_id"
     )
     parser.add_argument(
