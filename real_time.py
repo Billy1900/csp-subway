@@ -18,13 +18,6 @@ from e_01_nyct_subway import get_stop_time_at_station, filter_trains_headed_for_
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--filename",
-        type=str,
-        default=None,
-        required=True,
-        help="File which stores the recorded data",
-    )
-    parser.add_argument(
         "platforms", nargs="+", help="stop_id:service pair: see stops.txt for stop_id"
     )
     parser.add_argument(
@@ -36,6 +29,8 @@ if __name__ == '__main__':
         choices=["N", "S"]
     )
     args = parser.parse_args()
+    direction = args.direction
+    num_trains = 5
 
     platforms_to_subscribe_to = []
     for platform in args.platforms:
@@ -62,8 +57,8 @@ if __name__ == '__main__':
         csp.run(
                 departure_board,
                 [(stop_id, line)],
-                5,
-                args.direction,
+                num_trains,
+                direction,
                 None,
                 starttime=datetime.utcnow(),
                 endtime=timedelta(minutes=100),
