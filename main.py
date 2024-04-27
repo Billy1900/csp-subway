@@ -10,6 +10,8 @@ from csp_mta import (
     nyct_subway_pb2,
 )
 
+# sample run: csp-subway % python main.py --filename "TEST" --direction "N" --side "buy" --qty 1.0 635:456;  
+
 from datetime import datetime, timedelta
 from e_01_nyct_subway import get_stop_time_at_station, filter_trains_headed_for_stop, next_N_trains_at_stop, get_terminus, entities_to_departure_board_str, departure_board;
 
