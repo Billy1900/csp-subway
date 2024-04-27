@@ -29,6 +29,13 @@ In any financial market, traders aim to identify and profit off of market ineffi
 
 Drawing inspiration from this behavior of financial markets, we find a very exciting way to create long-term value for subway riders. The subway system is often subject to delays and estimation errors regarding arrival times, which can be quite detrimental to the experience of subway riders. The ability of traders to rectify mispricings in the value of SubExchange contracts contributes to more accurate estimations for subway scheduling. In the long term, increasingly efficient and competitive markets on our time contracts translates to better timing information and scheduling systems for the general public. **In other words, market participants are financially rewarded for contributing to the improvement of public infrastructure!**
 
+## Our Vision: Time Contracts for Many Industries
+
+Our methodology formulates a new class of financial instruments to speculate and trade on the timing of events. Beyond the MTA, we believe in the possibility of markets for time contracts in various different industries. There is vast potential to contribute to efficiency in scheduling and logistical applications in various sectors. 
+* For example, time contracts on shipping could allow companies to more accurately inform themselves and their customers as well as trade to hedge against delays. In the long term, market-informed improvements in scheduling and logistical processes will support global trade.
+
+The key innovation of our time contract methodology lies in allowing market participants to "trade time" and profit from helping improve scheduling-intensive processes in many parts of the global economy.
+
 ## Extensions
 
 * Allow users to close out contracts before expiration (train arrival)
