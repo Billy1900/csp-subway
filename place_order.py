@@ -78,7 +78,7 @@ if __name__ == '__main__':
     with FileLock(f"{shared_file}.lock"):
         ori_df = pd.read_csv(shared_file)
         # select first 5 rows that is not being read
-        df = ori_df[ori_df['read'] == 0].head(5)
+        df = ori_df[ori_df['read'] == 0].tail(5)
         # update the read to 1
         ori_df.loc[df.index, 'read'] = 1
         ori_df.to_csv(shared_file)

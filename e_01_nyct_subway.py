@@ -69,7 +69,7 @@ def get_terminus(entity):
 tracker = {}
 ticks = [0]
 ticker = [0]
-last_anticipated_arrival = [0]
+last_anticipated_arrival = [datetime.now()]
 def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, order):
     """
     Helper function to pretty-print train info
@@ -114,12 +114,12 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
             dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
             dep_str += f'Market: [Sell: {math.floor(sell/60)}:{(round(sell%60)):02d}, Buy: {math.floor(buy/60)}:{(round(buy%60)):02d}]\n\n'
 
-            df.loc[i-1] = [i, ev, ev, entity.trip_update.trip.trip_id, 0]
+            df.loc[i-1] = [i, sell, buy, entity.trip_update.trip.trip_id, 0]
         
         if os.path.exists(shared_file):
             with FileLock(f"{shared_file}.lock"):
                 ori_df = pd.read_csv(shared_file)
-                ori_df: pd.DataFrame = ori_df.append(df, ignore_index=True)  # append the new data
+                ori_df = ori_df._append(df, ignore_index=True)  # append the new data
                 ori_df.to_csv(shared_file, index=False)
         else:
             with FileLock(f"{shared_file}.lock"):
@@ -137,7 +137,7 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
         found = False
         for entity in entities:
             #if entity.trip_update.trip.trip_id != order["trip_id"]:
-            if entity.trip_update.trip.trip_id == '055250_4..S35X002':
+            if entity.trip_update.trip.trip_id == order["trip_id"]:
                 found = True
                 route = entity.trip_update.trip.route_id
                 direction = GTFS_DIRECTION[
@@ -150,13 +150,13 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
                 last_anticipated_arrival[0] = arrival
                 delta = arrival - datetime.now()
                 
-                dep_str = f'{entity.trip_update.trip.trip_id}{direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
-                dep_str += f"desired arrival time: "
+                dep_str = f' {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
+                dep_str += f"Desired arrival time: "
                 if order["transaction"] == 'B':
                     dep_str += f"later than {goal}\n"
                 else:
                     dep_str += f"before {goal}\n"
-                dep_str += f"new anticipated arrival time: {arrival}\n"
+                dep_str += f"Current anticipated arrival time: {arrival}\n"
                 ticker[0] += 10
                 return dep_str
         if not found:
@@ -166,7 +166,7 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
             if order["transaction"] == 'S': 
                 pnl *= -1 
             print(f'PNL: {pnl}')
-            return ""
+            exit(-1)
             
 
 
