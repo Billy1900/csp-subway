@@ -30,6 +30,8 @@ In any financial market, traders aim to identify and profit off of market ineffi
 Drawing inspiration from this behavior of financial markets, we find a very exciting way to create long-term value for subway riders. The subway system is often subject to delays and estimation errors regarding arrival times, which can be quite detrimental to the experience of subway riders. The ability of traders to rectify mispricings in the value of SubExchange contracts contributes to more accurate estimations for subway scheduling. In the long term, increasingly efficient and competitive markets on our time contracts translates to better timing information and scheduling systems for the general public. **In other words, market participants are financially rewarded for contributing to the improvement of public infrastructure!**
 
 ```shell
+# sample program to retrieve data on all 4/5/6 trains heading south from station 635 (14 St. Union Sq.)
+python real_time.py - --direction S 635:456  
+# sample program to execute by order of third listed market for 10 units
 python place_order.py --order_number 3 --order_type B --qty 10
-python real_time.py - --direction S 635:456    
 ```
