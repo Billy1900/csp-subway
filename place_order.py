@@ -1,6 +1,7 @@
 import argparse
 import csp
 import pandas as pd
+from filelock import FileLock
 
 from csp_mta import (
     GTFS_DIRECTION,
@@ -42,11 +43,20 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    df = pd.DataFrame({
-        "order_number": [1,2,3,4,5],
-        "sell": [100, 200, 300, 400, 500],
-        "buy": [100, 200, 300, 400, 500]
-    })
+    # df = pd.DataFrame({
+    #     "order_number": [1,2,3,4,5],
+    #     "sell": [100, 200, 300, 400, 500],
+    #     "buy": [100, 200, 300, 400, 500]
+    # })
+    shared_file = "shared.csv"
+    train_num = 5
+    with FileLock(f"{shared_file}.lock"):
+        ori_df = pd.read_csv(shared_file)
+        # select first 5 rows that is not being read
+        df = ori_df[ori_df['read'] == 0].head(5)
+        # update the read to 1
+        ori_df.loc[df.index, 'read'] = 1
+        ori_df.to_csv(shared_file)
 
     order_type = args.order_type
     order_num = args.order_number

@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from typing import List, Tuple
 import pandas as pd
 import math
+from filelock import FileLock
+import os
 
 import csp
 
@@ -13,6 +15,8 @@ from csp_mta import (
     GTFSRealtimeInputAdapter,
     nyct_subway_pb2,
 )
+
+shared_file = "shared.csv"
 
 
 def get_stop_time_at_station(entity, stop_id, dir):
@@ -68,7 +72,7 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks):
     """
     Helper function to pretty-print train info
     """
-    df = pd.DataFrame(columns = ["order_number", "sell", "buy"])
+    df = pd.DataFrame(columns = ["order_number", "sell", "buy", "read"])
     dep_str = f'\n At station {STOP_INFO_DF.loc[stop_id, "stop_name"]}\n\n'
     i = 0
     for entity in entities:
@@ -107,7 +111,17 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks):
         dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} ({terminus}) in {round(delta.total_seconds())} seconds\n'
         dep_str += f'Market: [Sell: {sell}, Buy: {buy}]\n\n'
 
-        df.loc[i-1] = [i, ev, ev]
+        df.loc[i-1] = [i, ev, ev, 0] # 0: not being read; 1: being read
+
+    if os.path.exists(shared_file):
+        with FileLock(f"{shared_file}.lock"):
+            ori_df = pd.read_csv(shared_file)
+            ori_df: pd.DataFrame = ori_df.append(df, ignore_index=True)  # append the new data
+            ori_df.to_csv(shared_file, index=False)
+    else:
+        with FileLock(f"{shared_file}.lock"):
+            df.to_csv(shared_file, index=False)
+
     print(tracker)
     ticks[0] += 10
     return dep_str
