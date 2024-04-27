@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-# csp-subway
-example cmd:
-```shell
-python3 main.py --filename recorded_data/2024-04-21-18\:54_to_2024-04-22-06\:54/1234567S_20240421_1854.parquet \
---line ACE \
---stop_id 230 \
---direction N \
---side buy \
---qty 22.5
-```
-=======
 # SubExchange
 
 The subway system is a central part of life for many people in New York City. The MTA provides a convenient and wide-spanning public transit network that moves millions of New York residents to and from different areas of the city every day. However, we envision the possibility of making subway riders' daily commutes even more exciting.
@@ -55,4 +43,3 @@ python real_time.py - --direction S 635:456
 # sample program to execute by order of third listed market for 10 units, 
 python place_order.py --order_number 3 --order_type B --qty 10 635:456
 ```
->>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea

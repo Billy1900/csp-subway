@@ -40,11 +40,7 @@ LINE_TO_ENDPOINT = {
     "MNR": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr",
 }
 
-<<<<<<< HEAD
-MTA_FEED_UPDATE_TIME = timedelta(seconds=30)
-=======
 MTA_FEED_UPDATE_TIME = timedelta(seconds=10)
->>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea
 GTFS_DIRECTION = ["", "Uptown", "", "Downtown", ""]
 NYC_TIMEZONE = pytz.timezone("America/New_York")
 
