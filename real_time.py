@@ -64,7 +64,7 @@ if __name__ == '__main__':
                 [(stop_id, line)],
                 5,
                 args.direction,
-                False,
+                None,
                 starttime=datetime.utcnow(),
                 endtime=timedelta(minutes=100),
                 realtime=True,
