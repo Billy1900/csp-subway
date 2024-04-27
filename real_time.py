@@ -1,8 +1,13 @@
 import argparse
+<<<<<<< HEAD
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
 import csp
+=======
+import csp
+import pandas as pd
+>>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea
 
 from csp_mta import (
     GTFS_DIRECTION,
@@ -12,6 +17,7 @@ from csp_mta import (
     nyct_subway_pb2,
 )
 
+<<<<<<< HEAD
 
 def get_stop_time_at_station(entity, stop_id):
     """
@@ -102,10 +108,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Print a realtime departure board at a set of stations."
     )
+=======
+# sample run: csp-subway % python main.py --filename "TEST" --direction "N" --side "buy" --qty 1.0 635:456;  
+
+from datetime import datetime, timedelta
+from e_01_nyct_subway import get_stop_time_at_station, filter_trains_headed_for_stop, next_N_trains_at_stop, get_terminus, entities_to_departure_board_str, departure_board;
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+>>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea
     parser.add_argument(
         "platforms", nargs="+", help="stop_id:service pair: see stops.txt for stop_id"
     )
     parser.add_argument(
+<<<<<<< HEAD
         "--show_graph",
         action="store_true",
         default=False,
@@ -131,6 +147,19 @@ if __name__ == "__main__":
     num_trains = args.num_trains
 
     # Process input data
+=======
+        "--direction",
+        type=str,
+        default="NULL",
+        required=True,
+        help="direction",
+        choices=["N", "S"]
+    )
+    args = parser.parse_args()
+    direction = args.direction
+    num_trains = 5
+
+>>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea
     platforms_to_subscribe_to = []
     for platform in args.platforms:
         stop_id, train_line = tuple(platform.split(":"))
@@ -153,6 +182,7 @@ if __name__ == "__main__":
 
         platforms_to_subscribe_to.append((stop_id, train_line))
 
+<<<<<<< HEAD
     if show_graph:
         csp.show_graph(
             departure_board,
@@ -169,3 +199,16 @@ if __name__ == "__main__":
             endtime=timedelta(minutes=1),
             realtime=True,
         )
+=======
+        csp.run(
+                departure_board,
+                [(stop_id, line)],
+                num_trains,
+                direction,
+                None,
+                starttime=datetime.utcnow(),
+                endtime=timedelta(minutes=100),
+                realtime=True,
+            )
+
+>>>>>>> 269c787ff12cd15251bdfb8013d4ab665f58abea
