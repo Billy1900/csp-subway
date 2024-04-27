@@ -1,6 +1,7 @@
 import argparse
 from datetime import datetime, timedelta
 from typing import List, Tuple
+import pandas as pd
 
 import csp
 
@@ -13,7 +14,7 @@ from csp_mta import (
 )
 
 
-def get_stop_time_at_station(entity, stop_id):
+def get_stop_time_at_station(entity, stop_id, dir):
     """
     Helper Python function to get the stop time at a station
     """
@@ -24,6 +25,7 @@ def get_stop_time_at_station(entity, stop_id):
             if (
                 stop_id in update.stop_id
                 and datetime.fromtimestamp(update.arrival.time) >= datetime.now()
+                and update.stop_id == f"{stop_id}{dir}"
             ):
                 return update.arrival.time
     return None
@@ -31,7 +33,7 @@ def get_stop_time_at_station(entity, stop_id):
 
 @csp.node
 def filter_trains_headed_for_stop(
-    gtfs_msgs: csp.ts[object], stop_id: str
+    gtfs_msgs: csp.ts[object], stop_id: str, dir: str,
 ) -> csp.ts[object]:
     """
     Filters the GTFS messages to only include trains that are currently headed for a stop with a given stop_id, found in stops.txt
@@ -39,7 +41,7 @@ def filter_trains_headed_for_stop(
     """
     relevant_entities = []
     for entity in gtfs_msgs.entity:
-        if get_stop_time_at_station(entity, stop_id):
+        if get_stop_time_at_station(entity, stop_id, dir):
             relevant_entities.append(entity)
 
     return relevant_entities
@@ -47,12 +49,12 @@ def filter_trains_headed_for_stop(
 
 @csp.node
 def next_N_trains_at_stop(
-    gtfs_msgs: csp.ts[object], stop_id: str, N: int
+    gtfs_msgs: csp.ts[object], stop_id: str, N: int, dir: str
 ) -> csp.ts[object]:
     """
     Returns the TripUpdate objects of the next N trains approaching the stop
     """
-    gtfs_msgs.sort(key=lambda entity: get_stop_time_at_station(entity, stop_id))
+    gtfs_msgs.sort(key=lambda entity: get_stop_time_at_station(entity, stop_id, dir))
     return gtfs_msgs[:N]
 
 
@@ -60,14 +62,16 @@ def get_terminus(entity):
     return entity.trip_update.stop_time_update[-1].stop_id
 
 
-def entities_to_departure_board_str(entities, stop_id):
+def entities_to_departure_board_str(entities, stop_id, dir):
     """
     Helper function to pretty-print train info
     """
+    df = pd.DataFrame(columns = ["order_number", "sell", "buy"])
     dep_str = f'\n At station {STOP_INFO_DF.loc[stop_id, "stop_name"]}\n\n'
     i = 0
     for entity in entities:
         route = entity.trip_update.trip.route_id
+        
         direction = GTFS_DIRECTION[
             entity.trip_update.trip.Extensions[
                 nyct_subway_pb2.nyct_trip_descriptor
@@ -75,7 +79,7 @@ def entities_to_departure_board_str(entities, stop_id):
         ]
         i += 1
         terminus = get_terminus(entity)
-        arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id))
+        arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
         delta = arrival - datetime.now()
         width = delta.total_seconds() * 0.1
         buy = round(delta.total_seconds() + width/2)
@@ -85,25 +89,27 @@ def entities_to_departure_board_str(entities, stop_id):
         dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} ({terminus}) in {round(delta.total_seconds())} seconds\n'
         dep_str += f'Market: [Sell: {sell}, Buy: {buy}]\n\n'
 
+        df.loc[i-1] = [i, sell, buy]
     return dep_str
 
 
 @csp.graph
-def departure_board(platforms: List[Tuple[str, str]], N: int):
+def departure_board(platforms: List[Tuple[str, str]], N: int, dir: str):
     """
     csp graph which ticks out the next N trains approaching the provided stations on each given line
     """
     for service in platforms:
         stop_id, line = service
         line_data = GTFSRealtimeInputAdapter(line, False)
-        trains_headed_for_station = filter_trains_headed_for_stop(line_data, stop_id)
-        next_N_trains = next_N_trains_at_stop(trains_headed_for_station, stop_id, N)
+        trains_headed_for_station = filter_trains_headed_for_stop(line_data, stop_id, dir)
+        next_N_trains = next_N_trains_at_stop(trains_headed_for_station, stop_id, N, dir)
         dep_str = csp.apply(
             next_N_trains,
-            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_),
+            lambda x, key_=stop_id: entities_to_departure_board_str(x, key_, dir),
             str,
         )
         csp.print("Departure Board", dep_str)
+
 
 
 if __name__ == "__main__":
@@ -173,6 +179,7 @@ if __name__ == "__main__":
             departure_board,
             platforms_to_subscribe_to,
             1,
+            dir,
             starttime=datetime.utcnow(),
             endtime=timedelta(minutes=1),
             realtime=True,

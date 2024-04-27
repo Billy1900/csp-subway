@@ -1,6 +1,7 @@
 import argparse
 import csp
 import os
+import pandas as pd
 
 from csp_mta import (
     GTFS_DIRECTION,
@@ -32,27 +33,10 @@ if __name__ == '__main__':
         type=str,
         default="NULL",
         required=True,
-        help="direction"
-    )
-    parser.add_argument(
-        "--side",
-        type=str,
-        default="NULL",
-        choices=["buy", "sell"],
-        required=True,
-        help="buy/sell"
-    )
-    parser.add_argument(
-        "--qty",
-        type=float,
-        default=None,
-        required=True,
-        help="qunatity you buy/sell"
+        help="direction",
+        choices=["N", "S"]
     )
     args = parser.parse_args()
-
-    #stop_id = args.stop_id
-    #line = args.line
 
     platforms_to_subscribe_to = []
     for platform in args.platforms:
@@ -80,12 +64,14 @@ if __name__ == '__main__':
     csp.run(
             departure_board,
             [(stop_id, line)],
-            10,
+            5,
+            args.direction,
             starttime=datetime.utcnow(),
             endtime=timedelta(minutes=1),
             realtime=True,
         )
     
+
 
     
 
