@@ -40,6 +40,6 @@ Drawing inspiration from this behavior of financial markets, we find a very exci
 ```shell
 # sample program to retrieve data on all 4/5/6 trains heading south from station 635 (14 St. Union Sq.)
 python real_time.py --direction S 635:456  
-# sample program to execute by order of third listed market for 10 units, 
-python place_order.py --order_number 3 --order_type B --qty 10 635:456
+# sample program to execute by order of first listed market for 10 units, 
+python place_order.py --order_number 1 --order_type B --qty 10 635:456
 ```
