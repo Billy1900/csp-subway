@@ -1,6 +1,5 @@
 import argparse
 import csp
-import os
 import pandas as pd
 
 from csp_mta import (
@@ -61,16 +60,16 @@ if __name__ == '__main__':
         platforms_to_subscribe_to.append((stop_id, train_line))
     
 
-    csp.run(
-            departure_board,
-            [(stop_id, line)],
-            5,
-            args.direction,
-            starttime=datetime.utcnow(),
-            endtime=timedelta(minutes=1),
-            realtime=True,
-        )
-    
+
+        csp.run(
+                departure_board,
+                [(stop_id, line)],
+                5,
+                args.direction,
+                starttime=datetime.utcnow(),
+                endtime=timedelta(seconds=10 ),
+                realtime=True,
+            )
 
 
     

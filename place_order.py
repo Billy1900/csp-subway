@@ -60,6 +60,7 @@ if __name__ == '__main__':
     print(f"spent: {total}, contracts: {sign}{quantity}")
 
 
+    
 
     
     

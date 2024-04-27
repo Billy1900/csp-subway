@@ -181,6 +181,6 @@ if __name__ == "__main__":
             1,
             dir,
             starttime=datetime.utcnow(),
-            endtime=timedelta(minutes=1),
+            endtime=timedelta(seconds=1),
             realtime=True,
         )
