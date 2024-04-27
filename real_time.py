@@ -29,6 +29,8 @@ if __name__ == '__main__':
         choices=["N", "S"]
     )
     args = parser.parse_args()
+    direction = args.direction
+    num_trains = 5
 
     platforms_to_subscribe_to = []
     for platform in args.platforms:
@@ -55,8 +57,8 @@ if __name__ == '__main__':
         csp.run(
                 departure_board,
                 [(stop_id, line)],
-                5,
-                args.direction,
+                num_trains,
+                direction,
                 None,
                 starttime=datetime.utcnow(),
                 endtime=timedelta(minutes=100),

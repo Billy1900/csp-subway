@@ -67,7 +67,7 @@ def get_terminus(entity):
     return entity.trip_update.stop_time_update[-1].stop_id
 
 tracker = {}
-ticks = [0]
+ticks = {}
 ticker = [0]
 last_anticipated_arrival = [datetime.now()]
 def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, order):
@@ -89,32 +89,37 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
             i += 1
             terminus = get_terminus(entity)
             arrival = datetime.fromtimestamp(get_stop_time_at_station(entity, stop_id, dir))
-            delta = arrival - datetime.now()
+            delta = arrival - datetime.now()            
 
-            if entity.trip_update.trip.trip_id in tracker:
-                tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
-                tracker[entity.trip_update.trip.trip_id]["mult"] = (tracker[entity.trip_update.trip.trip_id]["origin"]-tracker[entity.trip_update.trip.trip_id]["current"])/ticks[0]
+            trip_id = entity.trip_update.trip.trip_id
+            if trip_id not in ticks:
+                ticks[trip_id] = 10
             else:
-                tracker[entity.trip_update.trip.trip_id] = {}
-                tracker[entity.trip_update.trip.trip_id]["origin"] = round(delta.total_seconds())
-                tracker[entity.trip_update.trip.trip_id]["current"] = round(delta.total_seconds())
-                tracker[entity.trip_update.trip.trip_id]["mult"] = 1            
+                ticks[trip_id] += 10
 
-            if (tracker[entity.trip_update.trip.trip_id]["mult"] > 1):
-                ev = tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/8)+1)
+            if trip_id in tracker:
+                tracker[trip_id]["current"] = round(delta.total_seconds())
+                tracker[trip_id]["mult"] = (tracker[trip_id]["origin"]-tracker[trip_id]["current"])/ticks[trip_id]
             else:
-                ev =  tracker[entity.trip_update.trip.trip_id]["current"]/(((tracker[entity.trip_update.trip.trip_id]["mult"]-1)/4)+1)
+                tracker[trip_id] = {}
+                tracker[trip_id]["origin"] = round(delta.total_seconds())
+                tracker[trip_id]["current"] = round(delta.total_seconds())
+                tracker[trip_id]["mult"] = 1            
 
-            spread = ev * (0.2 * (math.e ** (-0.7*ticks[0]/100)) + 0.1) 
+            if (tracker[trip_id]["mult"] > 1):
+                ev = tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/8)+1)
+            else:
+                ev =  tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/4)+1)
+
+            spread = ev * (0.2 * (math.e ** (-0.7*ticks[trip_id]/100)) + 0.1) 
 
             buy = ev + spread/2
             sell = ev - spread/2
 
-
             dep_str += f'{i}. {direction} {route} train to {STOP_INFO_DF.loc[terminus, "stop_name"]} in {math.floor(delta.total_seconds()/60)}:{(round(delta.total_seconds()%60)):02d} minutes\n'
             dep_str += f'Market: [Sell: {math.floor(sell/60)}:{(round(sell%60)):02d}, Buy: {math.floor(buy/60)}:{(round(buy%60)):02d}]\n\n'
 
-            df.loc[i-1] = [i, sell, buy, entity.trip_update.trip.trip_id, 0]
+            df.loc[i-1] = [i, sell, buy, trip_id, 0]
         
         if os.path.exists(shared_file):
             with FileLock(f"{shared_file}.lock"):
@@ -125,8 +130,6 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
             with FileLock(f"{shared_file}.lock"):
                 df.to_csv(shared_file, index=False)
 
-        print(tracker)
-        ticks[0] += 10
         return dep_str
     else:
         price = order["price"] 
@@ -136,7 +139,6 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
 
         found = False
         for entity in entities:
-            #if entity.trip_update.trip.trip_id != order["trip_id"]:
             if entity.trip_update.trip.trip_id == order["trip_id"]:
                 found = True
                 route = entity.trip_update.trip.route_id
@@ -160,9 +162,10 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
                 ticker[0] += 10
                 return dep_str
         if not found:
-            print(f"actual arrival time: {last_anticipated_arrival[0]}")
+            print(f"Actual arrival time: {last_anticipated_arrival[0]}")
             diff = last_anticipated_arrival[0] - goal
             pnl = diff.total_seconds() * order['qty']
+            
             if order["transaction"] == 'S': 
                 pnl *= -1 
             print(f'PNL: {pnl}')
