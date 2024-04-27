@@ -131,7 +131,7 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
     else:
         price = order["price"] 
         tracker_start = datetime.now()
-        goal = tracker_start + price - timedelta(seconds=ticker[0])
+        goal = tracker_start + timedelta(seconds=price-ticker[0])
         goal = goal.replace(microsecond=0)
 
         found = False

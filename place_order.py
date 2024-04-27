@@ -98,6 +98,7 @@ if __name__ == '__main__':
     total = price
     if order_type == 'S':
         total *= -1
+        
     print(f"spent: {total}, contracts: {sign}{quantity}")
     
 
