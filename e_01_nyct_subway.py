@@ -107,11 +107,11 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
                 tracker[trip_id]["mult"] = 1            
 
             if (tracker[trip_id]["mult"] > 1):
-                ev = tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/8)+1)
+                ev = tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/20)+1)
             else:
-                ev =  tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/4)+1)
+                ev =  tracker[trip_id]["current"]/(((tracker[trip_id]["mult"]-1)/10)+1)
 
-            spread = ev * (0.2 * (math.e ** (-0.7*ticks[trip_id]/100)) + 0.1) 
+            spread = ev * (0.1 * (math.e ** (-0.7*ticks[trip_id]/100)) + 0.05) 
 
             buy = ev + spread/2
             sell = ev - spread/2
@@ -134,7 +134,7 @@ def entities_to_departure_board_str(entities, stop_id, dir, tracker, ticks, orde
     else:
         price = order["price"] 
         tracker_start = datetime.now()
-        goal = tracker_start + timedelta(seconds=price-ticker[0])
+        goal = tracker_start + timedelta(seconds=price-ticker[0]-0.2)
         goal = goal.replace(microsecond=0)
 
         found = False
